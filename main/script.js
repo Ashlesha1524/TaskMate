@@ -5,21 +5,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const emptyImage = document.querySelector('.middle-image');
     const progressbar = document.getElementById('progress');
     const progressnumbers = document.getElementById('numbers');
+    const voiceBtn = document.getElementById('voice-btn');
 
-    const toggleEmptyState = () => {
-        emptyImage.style.display = taskList.children.length === 0 ? 'block' : 'none';
-    };
-
-    const updateProgress = () => {
-        const totalTasks = taskList.children.length;
-        const completedTasks = taskList.querySelectorAll('.checkbox:checked').length;
-
-        progressbar.style.width = totalTasks ? `${(completedTasks / totalTasks) * 100}%` : '0%';
-        progressnumbers.textContent = `${completedTasks}/${totalTasks}`;
-
-        if (totalTasks > 0 && completedTasks === totalTasks) Confetti();
-    };
-
+    // --- 1️⃣ Define addTask FIRST ---
     const addTask = () => {
         const text = taskInput.value.trim();
         if (!text) return;
@@ -67,6 +55,49 @@ document.addEventListener('DOMContentLoaded', () => {
         updateProgress();
     };
 
+    // --- 2️⃣ Voice Input ---
+    let recognition;
+    if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        recognition = new SpeechRecognition();
+        recognition.lang = 'en-US';
+        recognition.continuous = false;
+        recognition.interimResults = false;
+
+        recognition.onresult = (event) => {
+            const transcript = event.results[0][0].transcript;
+            console.log("Spoken:", transcript); // For debugging
+            taskInput.value = transcript;
+            addTask();
+        };
+
+        recognition.onerror = (event) => {
+            console.error("Voice recognition error:", event.error);
+        };
+    } else {
+        voiceBtn.disabled = true;
+        voiceBtn.title = "Your browser does not support voice input";
+    }
+
+    voiceBtn.addEventListener('click', () => {
+        if (recognition) recognition.start();
+    });
+
+    // --- 3️⃣ Other functions ---
+    const toggleEmptyState = () => {
+        emptyImage.style.display = taskList.children.length === 0 ? 'block' : 'none';
+    };
+
+    const updateProgress = () => {
+        const totalTasks = taskList.children.length;
+        const completedTasks = taskList.querySelectorAll('.checkbox:checked').length;
+
+        progressbar.style.width = totalTasks ? `${(completedTasks / totalTasks) * 100}%` : '0%';
+        progressnumbers.textContent = `${completedTasks}/${totalTasks}`;
+
+        if (totalTasks > 0 && completedTasks === totalTasks) Confetti();
+    };
+
     addTaskBtn.addEventListener('click', addTask);
     taskInput.addEventListener('keypress', (e) => {
         if (e.key === 'Enter') addTask();
@@ -75,7 +106,7 @@ document.addEventListener('DOMContentLoaded', () => {
     toggleEmptyState(); // initial check
 });
 
-// Confetti
+// --- Confetti ---
 const Confetti = () => {
     const count = 200;
     const defaults = { origin: { y: 0.7 } };
@@ -90,3 +121,4 @@ const Confetti = () => {
     fire(0.1, { spread: 120, startVelocity: 25, decay: 0.92, scalar: 1.2 });
     fire(0.1, { spread: 120, startVelocity: 45 });
 };
+
